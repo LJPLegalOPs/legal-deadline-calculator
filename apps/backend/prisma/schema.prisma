@@ -1,0 +1,68 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  firmName  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  cases     Case[]
+  auditLog  AuditLog[]
+
+  @@map("users")
+}
+
+model Case {
+  id           Int        @id @default(autoincrement())
+  name         String
+  caseNumber   String?
+  description  String?
+  baseDate     DateTime
+  jurisdiction String     @default("louisiana")
+  practiceArea String?
+  userId       Int
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deadlines    Deadline[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("cases")
+}
+
+model Deadline {
+  id              Int     @id @default(autoincrement())
+  caseId          Int
+  case            Case    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  ruleId          String
+  ruleName        String
+  description     String?
+  calculatedDate  DateTime
+  adjustments     Json?
+  citation        String?
+  createdAt       DateTime @default(now())
+
+  @@map("deadlines")
+  @@index([caseId])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  resource  String
+  resourceId Int?
+  details   Json?
+  timestamp DateTime @default(now())
+
+  @@map("audit_logs")
+  @@index([userId, timestamp])
+}
