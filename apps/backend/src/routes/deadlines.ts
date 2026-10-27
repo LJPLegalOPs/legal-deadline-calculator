@@ -14,56 +14,12 @@ const calculateSchema = z.object({
   practiceArea: z.string().optional(),
 });
 
-const createCaseSchema = z.object({
-  name: z.string().min(1),
-  caseNumber: z.string().optional(),
-  description: z.string().optional(),
-  baseDate: z.string().refine((date) => !isNaN(Date.parse(date))),
-  jurisdiction: z.string().default('louisiana'),
-  practiceArea: z.string().optional(),
-});
-
-// Create a case
-router.post('/cases', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { name, caseNumber, description, baseDate, jurisdiction, practiceArea } = createCaseSchema.parse(req.body);
-    
-    const caseRecord = await prisma.case.create({
-      data: {
-        name,
-        caseNumber,
-        description,
-        baseDate: new Date(baseDate),
-        jurisdiction,
-        practiceArea,
-        userId: req.userId!,
-      },
-    });
-
-    res.status(201).json(caseRecord);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-// Get user's cases
-router.get('/cases', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const cases = await prisma.case.findMany({
-      where: { userId: req.userId },
-      include: { deadlines: true },
-    });
-    res.json(cases);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Calculate deadlines for a case
 router.post('/calculate', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { caseId, baseDate, jurisdiction, practiceArea } = calculateSchema.parse(req.body);
     
+    console.log('📥 Calculate endpoint called with:', { caseId, baseDate, jurisdiction, practiceArea });
+
     const deadlines = await DeadlineService.calculateAndSaveDeadlines(
       req.userId!,
       caseId,
@@ -72,13 +28,14 @@ router.post('/calculate', authMiddleware, async (req: AuthRequest, res: Response
       practiceArea
     );
 
-    res.json(deadlines);
+    console.log('📊 Deadlines returned:', deadlines);
+    res.status(200).json(deadlines);
   } catch (error: any) {
+    console.error('❌ Calculate error:', error);
     res.status(400).json({ error: error.message });
   }
 });
 
-// Get deadlines for a case
 router.get('/cases/:caseId/deadlines', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { caseId } = req.params;
@@ -96,8 +53,9 @@ router.get('/cases/:caseId/deadlines', authMiddleware, async (req: AuthRequest, 
       orderBy: { calculatedDate: 'asc' },
     });
 
-    res.json(deadlines);
+    res.status(200).json(deadlines);
   } catch (error: any) {
+    console.error('Error fetching deadlines:', error);
     res.status(500).json({ error: error.message });
   }
 });

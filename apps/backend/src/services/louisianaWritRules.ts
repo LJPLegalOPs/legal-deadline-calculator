@@ -69,12 +69,22 @@ export const LOUISIANA_DISCOVERY_RULES: DeadlineRule[] = [
   },
   {
     id: 'request_for_production',
-    name: 'Response to Request for Production',
+    name: 'Response to Request for Production of Documents',
     description: 'Deadline to respond to request for production of documents',
     baseDateField: 'service_date',
     offsetDays: 30,
     adjustForWeekends: true,
     adjustForHolidays: true,
     citation: 'La. C.C.P. Art. 1461'
+  },
+  {
+    id: 'request_for_admission',
+    name: 'Response to Request for Admission',
+    description: 'Deadline to respond to request for admission',
+    baseDateField: 'service_date',
+    offsetDays: 30,
+    adjustForWeekends: true,
+    adjustForHolidays: true,
+    citation: 'La. C.C.P. Art. 1469'
   }
 ];
