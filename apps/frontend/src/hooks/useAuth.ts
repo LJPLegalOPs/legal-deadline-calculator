@@ -27,7 +27,7 @@ export const useAuth = create<AuthStore>((set) => ({
   register: async (email, password, firmName) => {
     set({ loading: true, error: null });
     try {
-      const response = await authAPI.register(email, password, firmName);
+      await authAPI.register(email, password, firmName);
       set({ loading: false });
     } catch (error: any) {
       set({ error: error.response?.data?.error || 'Registration failed', loading: false });
