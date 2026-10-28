@@ -1,13 +1,14 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3002/api';
+const API_BASE = 'http://localhost:3002/api';
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
+  baseURL: API_BASE,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-// Add token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -17,16 +18,22 @@ api.interceptors.request.use((config) => {
 });
 
 export const authAPI = {
-  signup: (data: any) => api.post('/auth/signup', data),
-  login: (data: any) => api.post('/auth/login', data),
+  register: (email: string, password: string, firmName?: string) =>
+    api.post('/auth/register', { email, password, firmName }),
+  login: (email: string, password: string) =>
+    api.post('/auth/login', { email, password }),
+  getMe: () => api.get('/auth/me'),
 };
 
 export const caseAPI = {
-  getCases: () => api.get('/cases'),
   createCase: (data: any) => api.post('/cases', data),
+  getCases: () => api.get('/cases'),
+  getCase: (id: number) => api.get(`/cases/${id}`),
 };
 
 export const deadlineAPI = {
-  calculate: (data: any) => api.post('/deadlines/calculate', data),
-  getDeadlines: (caseId: number) => api.get(`/deadlines/cases/${caseId}/deadlines`),
+  calculate: (data: any) => api.post('/calculate', data),
+  getDeadlines: (caseId: number) => api.get(`/cases/${caseId}/deadlines`),
 };
+
+export default api;
