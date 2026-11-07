@@ -1,62 +1,44 @@
-import express, { Response } from 'express';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
+import express, { Router, Request, Response } from 'express';
 import { DeadlineService } from '../services/deadlineService';
-import { PrismaClient } from '@prisma/client';
-import { z } from 'zod';
 
-const router = express.Router();
-const prisma = new PrismaClient();
+const router = Router();
 
-const calculateSchema = z.object({
-  caseId: z.number(),
-  baseDate: z.string().refine((date) => !isNaN(Date.parse(date))),
-  jurisdiction: z.string().default('louisiana'),
-  practiceArea: z.string().optional(),
-});
-
-router.post('/calculate', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/calculate', async (req: Request, res: Response) => {
+  console.log('🔴 POST /api/calculate received');
+  console.log('   Body:', JSON.stringify(req.body));
+  console.log('   User ID:', (req as any).userId);
+  
   try {
-    const { caseId, baseDate, jurisdiction, practiceArea } = calculateSchema.parse(req.body);
+    const { caseId, baseDate, jurisdiction, practiceArea } = req.body;
     
-    console.log('📥 Calculate endpoint called with:', { caseId, baseDate, jurisdiction, practiceArea });
-
+    console.log('📥 Extracted params:', { caseId, baseDate, jurisdiction, practiceArea });
+    
     const deadlines = await DeadlineService.calculateAndSaveDeadlines(
-      req.userId!,
+      (req as any).userId,
       caseId,
       new Date(baseDate),
       jurisdiction,
       practiceArea
     );
-
-    console.log('📊 Deadlines returned:', deadlines);
-    res.status(200).json(deadlines);
+    
+    console.log('✅ Deadlines calculated:', deadlines.length);
+    res.json(deadlines);
   } catch (error: any) {
-    console.error('❌ Calculate error:', error);
+    console.error('❌ ERROR in /calculate:', error.message);
+    console.error('   Stack:', error.stack);
     res.status(400).json({ error: error.message });
   }
 });
 
-router.get('/cases/:caseId/deadlines', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/cases/:caseId/deadlines', async (req: Request, res: Response) => {
+  console.log('🔴 GET /api/cases/:caseId/deadlines received');
   try {
-    const { caseId } = req.params;
-    
-    const caseRecord = await prisma.case.findUnique({
-      where: { id: parseInt(caseId) },
-    });
-
-    if (!caseRecord || caseRecord.userId !== req.userId) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
-
-    const deadlines = await prisma.deadline.findMany({
-      where: { caseId: parseInt(caseId) },
-      orderBy: { calculatedDate: 'asc' },
-    });
-
-    res.status(200).json(deadlines);
+    const deadlines = await DeadlineService.getDeadlinesByCase(parseInt(req.params.caseId));
+    console.log('✅ Retrieved deadlines:', deadlines.length);
+    res.json(deadlines);
   } catch (error: any) {
-    console.error('Error fetching deadlines:', error);
-    res.status(500).json({ error: error.message });
+    console.error('❌ ERROR in GET deadlines:', error.message);
+    res.status(400).json({ error: error.message });
   }
 });
 
