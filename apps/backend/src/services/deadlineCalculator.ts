@@ -40,23 +40,13 @@ export class DeadlineCalculator {
     // Add the offset days
     calculatedDate.setDate(calculatedDate.getDate() + rule.offsetDays);
     
-    // Adjust for weekends
-    if (rule.adjustForWeekends) {
+    // Adjust for weekends and holidays together (keep looping until we land on a business day)
+    if (rule.adjustForWeekends || rule.adjustForHolidays) {
       const beforeAdjust = new Date(calculatedDate);
-      calculatedDate = this.adjustForWeekend(calculatedDate);
+      calculatedDate = this.adjustToNextBusinessDay(calculatedDate, rule.adjustForWeekends, rule.adjustForHolidays);
       
       if (calculatedDate.getTime() !== beforeAdjust.getTime()) {
-        adjustments.push(`Adjusted from ${this.formatDate(beforeAdjust)} (weekend)`);
-      }
-    }
-    
-    // Adjust for holidays
-    if (rule.adjustForHolidays) {
-      const beforeAdjust = new Date(calculatedDate);
-      calculatedDate = this.adjustForHoliday(calculatedDate);
-      
-      if (calculatedDate.getTime() !== beforeAdjust.getTime()) {
-        adjustments.push(`Adjusted from ${this.formatDate(beforeAdjust)} (holiday)`);
+        adjustments.push(`Adjusted from ${this.formatDate(beforeAdjust)} to next business day`);
       }
     }
     
@@ -70,25 +60,34 @@ export class DeadlineCalculator {
     };
   }
   
-  private adjustForWeekend(date: Date): Date {
+  /**
+   * Adjust date to the next business day (skipping weekends and/or holidays)
+   */
+  private adjustToNextBusinessDay(date: Date, adjustForWeekends: boolean, adjustForHolidays: boolean): Date {
     const adjusted = new Date(date);
-    while (this.isWeekend(adjusted)) {
+    let maxIterations = 365; // Prevent infinite loops
+    let iterations = 0;
+    
+    while (iterations < maxIterations) {
+      const isWeekend = this.isWeekend(adjusted);
+      const isHoliday = adjustForHolidays ? this.isHoliday(adjusted) : false;
+      
+      // If it's a business day, we're done
+      if (!(adjustForWeekends && isWeekend) && !isHoliday) {
+        break;
+      }
+      
+      // Move to next day
       adjusted.setDate(adjusted.getDate() + 1);
+      iterations++;
     }
-    return adjusted;
-  }
-  
-  private adjustForHoliday(date: Date): Date {
-    const adjusted = new Date(date);
-    while (this.isHoliday(adjusted) || this.isWeekend(adjusted)) {
-      adjusted.setDate(adjusted.getDate() + 1);
-    }
+    
     return adjusted;
   }
   
   private isWeekend(date: Date): boolean {
     const day = date.getDay();
-    return day === 0 || day === 6;
+    return day === 0 || day === 6; // Sunday = 0, Saturday = 6
   }
   
   private isHoliday(date: Date): boolean {
