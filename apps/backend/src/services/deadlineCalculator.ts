@@ -27,7 +27,12 @@ export class DeadlineCalculator {
   
   constructor(year: number, jurisdiction: string = 'louisiana') {
     this.jurisdiction = jurisdiction;
-    this.holidays = HolidayEngine.getHolidays(year, jurisdiction);
+    // Load holidays for the current year AND next year (in case deadline crosses year boundary)
+    this.holidays = [
+      ...HolidayEngine.getHolidays(year, jurisdiction),
+      ...HolidayEngine.getHolidays(year + 1, jurisdiction)
+    ];
+    console.log(`[DeadlineCalculator] Loaded ${this.holidays.length} holidays for ${year} and ${year + 1}`);
   }
   
   /**
@@ -40,6 +45,12 @@ export class DeadlineCalculator {
     // Add the offset days
     calculatedDate.setDate(calculatedDate.getDate() + rule.offsetDays);
     
+    console.log(`[DeadlineCalculator] Rule: ${rule.id}`);
+    console.log(`  - Base: ${this.formatDate(baseDate)}`);
+    console.log(`  - After offset: ${this.formatDate(calculatedDate)}`);
+    console.log(`  - adjustForWeekends: ${rule.adjustForWeekends}`);
+    console.log(`  - adjustForHolidays: ${rule.adjustForHolidays}`);
+    
     // Adjust for weekends and holidays together (keep looping until we land on a business day)
     if (rule.adjustForWeekends || rule.adjustForHolidays) {
       const beforeAdjust = new Date(calculatedDate);
@@ -47,6 +58,9 @@ export class DeadlineCalculator {
       
       if (calculatedDate.getTime() !== beforeAdjust.getTime()) {
         adjustments.push(`Adjusted from ${this.formatDate(beforeAdjust)} to next business day`);
+        console.log(`  - ADJUSTED to: ${this.formatDate(calculatedDate)}`);
+      } else {
+        console.log(`  - No adjustment needed`);
       }
     }
     
