@@ -27,6 +27,8 @@ export class DeadlineService {
     // Get rules based on practice area
     const rules = this.getRulesByPracticeArea(practiceArea, jurisdiction);
     
+    console.log('🔍 getRulesByPracticeArea returned:', rules.length, 'rules');
+    
     // Calculate each deadline
     const deadlines = [];
     for (const rule of rules) {
@@ -67,17 +69,28 @@ export class DeadlineService {
   }
 
   private static getRulesByPracticeArea(practiceArea?: string, jurisdiction: string = 'louisiana') {
+    console.log('🔑 getRulesByPracticeArea called with practiceArea:', practiceArea);
+    
+    // Map practice area to rule sets
+    const rulesByArea: { [key: string]: any[] } = {
+      'writ': LOUISIANA_WRIT_RULES,
+      'appeal': LOUISIANA_APPEAL_RULES,
+      'discovery': LOUISIANA_DISCOVERY_RULES,
+    };
+
+    if (practiceArea && rulesByArea[practiceArea]) {
+      console.log(`✅ Found ${rulesByArea[practiceArea].length} rules for practice area: ${practiceArea}`);
+      return rulesByArea[practiceArea];
+    }
+
+    // If no practice area or invalid, return all rules
     const allRules = [
       ...LOUISIANA_WRIT_RULES,
       ...LOUISIANA_APPEAL_RULES,
       ...LOUISIANA_DISCOVERY_RULES,
     ];
-
-    if (practiceArea) {
-      return allRules.filter((rule: any) => rule.id.includes(practiceArea));
-    }
-
+    
+    console.log(`⚠️  No valid practice area provided, returning all ${allRules.length} rules`);
     return allRules;
   }
 }
-
