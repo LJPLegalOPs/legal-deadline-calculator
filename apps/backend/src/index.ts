@@ -71,3 +71,5 @@ app.listen(PORT, () => {
   console.log(`⏰ Deadline routes: http://localhost:${PORT}/api/calculate`);
   console.log(`🌐 Frontend: http://localhost:${PORT}`);
 });
+
+// Force rebuild: Sat Nov  7 12:58:50 CST 2026
