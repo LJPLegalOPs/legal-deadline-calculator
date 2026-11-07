@@ -46,4 +46,33 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Get deadlines for a specific case
+router.get('/:caseId/deadlines', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const caseId = parseInt(req.params.caseId);
+    
+    // Verify case belongs to user
+    const caseItem = await prisma.case.findFirst({
+      where: { 
+        id: caseId,
+        userId: req.userId 
+      },
+    });
+
+    if (!caseItem) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+
+    const deadlines = await prisma.deadline.findMany({
+      where: { caseId },
+      orderBy: { calculatedDate: 'asc' },
+    });
+
+    res.json(deadlines);
+  } catch (error: any) {
+    console.error('Error fetching deadlines:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
